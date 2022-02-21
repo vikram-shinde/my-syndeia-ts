@@ -5,30 +5,26 @@ import RemoveIcon from '@mui/icons-material/Remove';
 
 import { EmotionJSX } from '@emotion/react/types/jsx-namespace';
 import { GithubResponseViewModel } from '../github/viewmodel/GithubResponseViewModel';
-import { GithubServiceLocator } from '../github/domain/GithubServiceLocator';
 import TreeviewItems from './TreeviewItems';
 
 export interface ITreeviewItemProps {
     item: GithubResponseViewModel;
-    //onItemCicked: (event: React.MouseEvent<HTMLElement>, item: TreeviewResponseViewModel) => void;
+    onItemExpanded(item: GithubResponseViewModel): void;
+    onItemCollapsed(item: GithubResponseViewModel): void;
 }
 
 export interface ITreeviewItemState {
-    childItems?: React.ReactNode
     expanded: boolean,
     icon: EmotionJSX.Element,
     buttonColor: "inherit" | "primary" | "secondary" | "default" | "success" | "error" | "info" | "warning" | undefined
 }
 
 export default class TreeviewItem extends React.Component<ITreeviewItemProps, ITreeviewItemState> {
-    serviceLocator: GithubServiceLocator;
 
     constructor(props: ITreeviewItemProps) {
         super(props);
-        this.serviceLocator = new GithubServiceLocator();
 
         this.state = {
-            childItems: undefined,
             expanded: false,
             icon: <AddIcon sx={{ fontSize: '15px' }} />,
             buttonColor: "primary"
@@ -37,10 +33,15 @@ export default class TreeviewItem extends React.Component<ITreeviewItemProps, IT
 
     private itemClicked(item: GithubResponseViewModel) {
         if (this.state.expanded) {
-            this.setState(() => ({ childItems: [], expanded: false, icon: <AddIcon sx={{ fontSize: '15px' }} />, buttonColor: "primary" }));
+            this.setState(() => ({ expanded: false, icon: <AddIcon sx={{ fontSize: '15px' }} />, buttonColor: "primary" }));
+            this.props.onItemCollapsed(item);
         } else {
-            const items = this.serviceLocator.execute({ model: item.model, id: item.id });
-            this.setState(() => ({ childItems: <TreeviewItems items={items} />, expanded: true, icon: <RemoveIcon sx={{ fontSize: '15px' }} />, buttonColor: "default" }));
+            this.setState(() => ({
+                expanded: true,
+                icon: <RemoveIcon sx={{ fontSize: '15px' }} />,
+                buttonColor: "default"
+            }));
+            this.props.onItemExpanded(item);
         }
     }
 
@@ -52,7 +53,10 @@ export default class TreeviewItem extends React.Component<ITreeviewItemProps, IT
                     {this.state.icon}
                 </Fab>
                 {this.props.item.label}
-                {this.state.childItems}
+                {
+                    this.props.item.children && 
+                    <TreeviewItems items={this.props.item.children} onItemExpanded={this.props.onItemExpanded} onItemCollapsed={this.props.onItemCollapsed} />
+                }
             </li>
         );
     }

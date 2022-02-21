@@ -4,11 +4,11 @@ import { GithubService, GithubUserService, GithubRepoService, GithubBranchServic
 import { GithubUserResponse, GithubTagResponse } from './../model/Response';
 import { GithubResponseViewModel } from './../viewmodel/GithubResponseViewModel';
 
-export abstract class IGithubServiceLocator {
-    abstract execute(item: IGithubRequest): Array<GithubResponseViewModel>
+export interface IGithubServiceLocator {
+    execute(item: IGithubRequest): Array<GithubResponseViewModel>
 };
 
-export class GithubServiceLocator extends IGithubServiceLocator {
+export class GithubServiceLocator implements IGithubServiceLocator {
     public execute(request: IGithubRequest): Array<GithubResponseViewModel> {
         let service: GithubService;
 

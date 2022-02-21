@@ -3,10 +3,13 @@ import { GithubResponseViewModel } from './../github/viewmodel/GithubResponseVie
 import TreeviewItem from './TreeviewItem';
 
 export interface ITreeviewItemsProps {
-    items?: Array<GithubResponseViewModel>;
+  items: Array<GithubResponseViewModel>;
+  onItemExpanded(item: GithubResponseViewModel): void;
+  onItemCollapsed(item: GithubResponseViewModel): void;
 }
 
-export interface ITreeviewItemsState { }
+export interface ITreeviewItemsState {
+}
 
 export default class TreeviewItems extends React.Component<
     ITreeviewItemsProps,
@@ -15,12 +18,13 @@ export default class TreeviewItems extends React.Component<
     constructor(props: ITreeviewItemsProps) {
         super(props);
 
-        this.state = {};
+        this.state = {
+        }
     }
 
     public render() {
-        return <ul style={{listStyleType: "none"}}>{this.props.items && this.props.items.map((item) => (
-            <TreeviewItem key={item.id} item={item}/>
+        return <ul style={{ listStyleType: "none" }}>{this.props.items && this.props.items.map((item) => (
+            <TreeviewItem key={item.id} item={item} onItemExpanded={this.props.onItemExpanded} onItemCollapsed={this.props.onItemCollapsed}/>
         ))}</ul>
     }
 }
