@@ -1,64 +1,97 @@
-import { GithubBranchResponse, GithubCommitResponse, GithubIssueResponse, GithubRepositoryResponse, IGithubResponse } from '../model/Response';
-import { IGithubRequest } from './../model/Request';
-import { GithubService, GithubUserService, GithubRepoService, GithubBranchService, GithubCommitService, GithubIssueService, GithubTagService } from './GithubService';
-import { GithubUserResponse, GithubTagResponse } from './../model/Response';
+import { GithubRequest } from './../model/Request';
 import { GithubResponseViewModel } from './../viewmodel/GithubResponseViewModel';
-
+import { GithubBranchService, GithubCommitService, GithubIssueService, GithubRepoService, GithubTagService, /*GithubService,*/ GithubUserService } from './GithubService';
 export interface IGithubServiceLocator {
-    execute(item: IGithubRequest): Array<GithubResponseViewModel>
+    execute(item: GithubRequest): Promise<Array<GithubResponseViewModel>>
 };
 
 export class GithubServiceLocator implements IGithubServiceLocator {
-    public execute(request: IGithubRequest): Array<GithubResponseViewModel> {
-        let service: GithubService;
 
+    public execute(request: GithubRequest): Promise<Array<GithubResponseViewModel>> {
         switch (request.model) {
             case undefined:
-                service = new GithubUserService();
-                const users = (service.fetchData(request) as Array<GithubUserResponse>).
-                map(item => new GithubResponseViewModel("userChildren", item.id, item.login, ""));
-                return users;
+                return new GithubUserService().fetchData()
+                    .then(response => {
+                        //console.log('GithubUserResponse: ', response.data);
+                        return response.data
+                            .map(item => new GithubResponseViewModel("repos", "users", item.id, item.login));
+                    })
+                    .catch((e: Error) => {
+                        console.log('GithubUserResponse Error: ', e);
+                        return [];
+                    });
 
-            case "userChildren":
-                service = new GithubRepoService();
-                const repos = (service.fetchData(request) as Array<GithubRepositoryResponse>)
-                .map(item => new GithubResponseViewModel("repoChildren", item.id, item.name, ""));
-                return repos;
+            case "repos":
+                return new GithubRepoService().fetchData(request.getValue("users"))
+                    .then(response => {
+                        //console.log('GithubRepoService: ', response.data);
+                        return response.data
+                            .map(item => new GithubResponseViewModel("reposChildren", "repos", item.id, item.name));
+                    })
+                    .catch((e: Error) => {
+                        console.log('GithubRepoService Error: ', e);
+                        return [];
+                    });
 
-            case "repoChildren":
+            case "reposChildren":
                 const statics: Array<GithubResponseViewModel> = [
-                    new GithubResponseViewModel("branchChildren", 101, "Branches", ""),
-                    new GithubResponseViewModel("commitChildren", 102, "Commits", ""),
-                    new GithubResponseViewModel("issueChildren", 103, "Issues", ""),
-                    new GithubResponseViewModel("tagChildren", 104, "Tags", "")
+                    new GithubResponseViewModel("branches", "reposChildren", 101, "Branches"),
+                    new GithubResponseViewModel("commits", "reposChildren", 102, "Commits"),
+                    new GithubResponseViewModel("issues", "reposChildren", 103, "Issues"),
+                    new GithubResponseViewModel("tags", "reposChildren", 104, "Tags")
                 ];
-                return statics;
+                return new Promise((resolve) => { resolve(statics)});
 
-            case "branchChildren":
-                service = new GithubBranchService();
-                const branches = (service.fetchData(request) as Array<GithubBranchResponse>).map((item, index) => new GithubResponseViewModel("", index, item.name, ""));
-                return branches;
+            case "branches":
+                return new GithubBranchService().fetchData(request.getValue("users"), request.getValue("repos"))
+                    .then(response => {
+                        //console.log('GithubBranchService: ', response.data);
+                        return response.data
+                            .map((item, index) => new GithubResponseViewModel("branchesChildren", "branches", index, item.name));
+                    })
+                    .catch((e: Error) => {
+                        console.log('GithubBranchService Error: ', e);
+                        return [];
+                    });
 
-            case "commitChildren":
-                service = new GithubCommitService();
-                const commits = (service.fetchData(request) as Array<GithubCommitResponse>)
-                .map((item, index) => new GithubResponseViewModel("", index, item.node_id, ""));
-                return commits;
+            case "commits":
+                return new GithubCommitService().fetchData(request.getValue("users"), request.getValue("repos"))
+                    .then(response => {
+                        //console.log('GithubCommitService: ', response.data);
+                        return response.data
+                            .map((item, index) => new GithubResponseViewModel("commitsChildren", "commits", index, item.node_id));
+                    })
+                    .catch((e: Error) => {
+                        console.log('GithubCommitService Error: ', e);
+                        return [];
+                    });
 
-            case "issueChildren":
-                service = new GithubIssueService();
-                const issues = (service.fetchData(request) as Array<GithubIssueResponse>)
-                .map((item, index) => new GithubResponseViewModel("", index, item.title, ""));
-                return issues;
+            case "issues":
+                return new GithubIssueService().fetchData(request.getValue("users"), request.getValue("repos"))
+                    .then(response => {
+                        //console.log('GithubIssueService: ', response.data);
+                        return response.data
+                            .map((item, index) => new GithubResponseViewModel("issuesChildren", "issues", index, item.title));
+                    })
+                    .catch((e: Error) => {
+                        console.log('GithubIssueService Error: ', e);
+                        return [];
+                    });
 
-            case "tagChildren":
-                service = new GithubTagService();
-                const tags = (service.fetchData(request) as Array<GithubTagResponse>)
-                .map((item, index) => new GithubResponseViewModel("", index, item.name, ""));
-                return tags;
+            case "tags":
+                return new GithubTagService().fetchData(request.getValue("users"), request.getValue("repos"))
+                    .then(response => {
+                        //console.log('GithubTagService: ', response.data);
+                        return response.data
+                            .map((item, index) => new GithubResponseViewModel("tagsChildren", "tags", index, item.name));
+                    })
+                    .catch((e: Error) => {
+                        console.log('GithubTagService Error: ', e);
+                        return [];
+                    });
 
             default:
-                return []
+                return new Promise((resolve) => { resolve([]); });
         }
     }
 }
